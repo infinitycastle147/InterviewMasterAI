@@ -1,0 +1,5 @@
+{
+  "name": "InterviewMaster AI",
+  "description": "A self-hosted, AI-powered interview quiz platform that syncs with GitHub markdown files and provides code execution and intelligent validation.",
+  "requestFramePermissions": []
+}
