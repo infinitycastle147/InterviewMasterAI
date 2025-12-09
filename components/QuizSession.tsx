@@ -445,35 +445,31 @@ export const QuizSession: React.FC<QuizSessionProps> = ({ questions, onComplete,
                
                {/* Console Side */}
                <div className="md:w-[40%] flex flex-col bg-[#010409]">
-                  <div className="bg-[#161b22] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-800 flex justify-between items-center select-none">
-                    <span>Console Output</span>
-                    <button onClick={() => setPlaygroundOutput('')} className="hover:text-white transition-colors">Clear</button>
+                  <div className="bg-[#161b22] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-800 flex justify-between items-center">
+                    <span>Terminal / Console</span>
+                    <div className="flex gap-2">
+                       <div className="w-2 h-2 rounded-full bg-gray-700"></div>
+                       <div className="w-2 h-2 rounded-full bg-gray-700"></div>
+                    </div>
                   </div>
-                  <div className="flex-1 p-6 font-mono text-xs overflow-auto whitespace-pre-wrap text-gray-300 custom-scrollbar">
-                    {playgroundOutput ? (
-                        <span className={playgroundOutput.startsWith('Error') || playgroundOutput.includes('Error:') ? 'text-rose-400' : 'text-emerald-400'}>
-                            {playgroundOutput}
-                        </span>
-                    ) : (
-                        <span className="text-gray-700 italic">// Run code to see output...</span>
-                    )}
+                  <div className="flex-1 p-4 font-mono text-xs overflow-y-auto text-gray-300 custom-scrollbar">
+                     {isRunningCode ? (
+                       <span className="text-yellow-400 animate-pulse">Running script...</span>
+                     ) : (
+                       <pre className="whitespace-pre-wrap">{playgroundOutput || <span className="text-gray-600 opacity-50"> // Output will appear here</span>}</pre>
+                     )}
+                  </div>
+                  <div className="p-4 border-t border-gray-800 bg-[#0d1117]">
+                     <button 
+                        onClick={handleRunPlayground}
+                        disabled={isRunningCode}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-indigo-500/20 active:translate-y-0.5"
+                     >
+                        <Play className="w-4 h-4 fill-current" />
+                        Run Code
+                     </button>
                   </div>
                </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-800 flex justify-between items-center bg-[#161b22]">
-              <div className="text-xs text-gray-500 hidden sm:block">
-                 <span className="text-orange-400">Note:</span> Code runs in a local sandbox. Browser APIs may be limited.
-              </div>
-              <button
-                onClick={handleRunPlayground}
-                disabled={isRunningCode}
-                className="ml-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-900/20 active:translate-y-0.5"
-              >
-                {isRunningCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-                Run Code
-              </button>
             </div>
           </div>
         </div>

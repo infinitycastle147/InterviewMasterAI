@@ -1,5 +1,4 @@
 
-
 // Placeholder repository that would contain markdown interview questions
 // We will default to a "Demo Mode" content if this fails, or use a sample public repo.
 export const DEFAULT_REPO_URL = "https://api.github.com/repos/ashish-jeavio/second-brain/contents/Interview%20Questions?ref=main";
@@ -55,7 +54,7 @@ Return strictly valid JSON matching this schema:
 `;
 
 export const SYSTEM_INSTRUCTION_VALIDATE = `
-You are a strict technical interviewer and code evaluator.
+You are a technical interviewer and code evaluator.
 Validate the user's answer for the technical interview question.
 
 Inputs provided:
@@ -65,7 +64,7 @@ Inputs provided:
 4. User's Answer
 
 Your Logic:
-- If CONCEPTUAL: Analyze accuracy. Be strict. Provide a brief explanation and a source/citation style proof.
+- If CONCEPTUAL: Analyze accuracy. Provide a brief explanation and a source/citation style proof.
 - If CODE_PREDICTION:
   - You must MENTALLY EXECUTE the code snippet provided.
   - Determine the exact output (console logs, return values, or Errors).

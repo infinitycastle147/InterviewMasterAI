@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, FileText, Play, Code2, AlertCircle, Settings2, Hash, ChevronRight, Github, Layers } from 'lucide-react';
+import { RefreshCw, FileText, Play, Code2, Settings2, Hash, ChevronRight, Github, Layers, Video } from 'lucide-react';
 import { RepoFile, Question } from '../types';
 import { DEMO_QUESTIONS_MARKDOWN } from '../constants';
 
 interface DashboardProps {
   files: RepoFile[];
   onStartQuiz: (questions: Question[]) => void;
+  onStartLiveInterview: (questions: Question[]) => void;
   onSync: () => void;
   isSyncing: boolean;
 }
@@ -61,7 +62,13 @@ const parseQuestions = (markdown: string): Question[] => {
   return questions;
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ files, onStartQuiz, onSync, isSyncing }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ 
+    files, 
+    onStartQuiz, 
+    onStartLiveInterview, 
+    onSync, 
+    isSyncing
+}) => {
   const [selectedFile, setSelectedFile] = useState<RepoFile | null>(null);
   const [useDemo, setUseDemo] = useState(false);
   const [useMixed, setUseMixed] = useState(false);
@@ -102,6 +109,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ files, onStartQuiz, onSync
     }
     const selectedQuestions = shuffled.slice(0, questionCount);
     onStartQuiz(selectedQuestions);
+  };
+
+  const handleStartLive = () => {
+    // Gather all questions from all files for Live Context
+    let allQuestions: Question[] = [];
+    if (files.length > 0) {
+        allQuestions = files.flatMap(f => parseQuestions(f.content || ''));
+    } else {
+        allQuestions = parseQuestions(DEMO_QUESTIONS_MARKDOWN);
+    }
+
+    // Shuffle and pick a reasonable subset for context window
+    const shuffled = [...allQuestions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Pass up to 20 questions to the live session
+    onStartLiveInterview(shuffled.slice(0, 20));
   };
 
   const handleSelectFile = (file: RepoFile) => {
@@ -248,37 +275,59 @@ export const Dashboard: React.FC<DashboardProps> = ({ files, onStartQuiz, onSync
 
         {/* Configuration - Spans 5 columns */}
         <div className="lg:col-span-5 flex flex-col gap-6">
+            
+          {/* LIVE INTERVIEW CARD */}
+          <div className="bg-gradient-to-br from-indigo-900/40 to-blue-900/40 backdrop-blur-xl border border-indigo-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-32 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
+            
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+                        <Code2 className="w-3 h-3" /> Beta
+                    </div>
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2">Live AI Interview</h3>
+                <p className="text-indigo-200 text-sm mb-6 leading-relaxed">
+                    Experience a real-time voice interview. The AI will randomly select questions from your uploaded files and conduct a human-like assessment.
+                </p>
+                <button 
+                    onClick={handleStartLive}
+                    className="w-full py-4 bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+                >
+                    <Video className="w-5 h-5" />
+                    Start Live Session
+                </button>
+            </div>
+          </div>
+
           <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-3xl p-8 shadow-2xl flex-1 flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-indigo-400" />
-                Configuration
+                Standard Quiz Config
               </h3>
 
-              <div className="space-y-8 flex-1">
+              <div className="space-y-6 flex-1">
                  {/* Selected Topic Display */}
-                 <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl opacity-20 group-hover:opacity-30 transition duration-500 blur"></div>
-                    <div className="relative bg-gray-950 rounded-xl p-5 border border-gray-800">
-                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Topic</div>
-                        <div className="text-lg font-medium truncate flex items-center gap-2">
-                            {useDemo ? (
-                                <span className="text-emerald-400 flex items-center gap-2"><Code2 className="w-4 h-4"/> Demo JS Questions</span>
-                            ) : useMixed ? (
-                                <span className="text-purple-400 flex items-center gap-2"><Layers className="w-4 h-4"/> All Topics (Mixed)</span>
-                            ) : selectedFile ? (
-                                <span className="text-indigo-400 flex items-center gap-2"><FileText className="w-4 h-4"/> {selectedFile.name}</span>
-                            ) : (
-                                <span className="text-gray-600 italic">Select a topic from the list</span>
-                            )}
-                        </div>
+                 <div className="relative bg-gray-950 rounded-xl p-5 border border-gray-800">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Topic</div>
+                    <div className="text-lg font-medium truncate flex items-center gap-2">
+                        {useDemo ? (
+                            <span className="text-emerald-400 flex items-center gap-2"><Code2 className="w-4 h-4"/> Demo JS Questions</span>
+                        ) : useMixed ? (
+                            <span className="text-purple-400 flex items-center gap-2"><Layers className="w-4 h-4"/> All Topics (Mixed)</span>
+                        ) : selectedFile ? (
+                            <span className="text-indigo-400 flex items-center gap-2"><FileText className="w-4 h-4"/> {selectedFile.name}</span>
+                        ) : (
+                            <span className="text-gray-600 italic">Select a topic from the list</span>
+                        )}
                     </div>
                  </div>
 
                  {/* Slider */}
                  <div className="bg-gray-950/50 rounded-xl p-6 border border-gray-800">
-                    <div className="flex justify-between items-end mb-6">
-                        <label className="text-sm font-bold text-gray-400 uppercase tracking-wider">Number of Questions</label>
-                        <div className="text-2xl font-bold text-white font-mono bg-gray-800 px-3 py-1 rounded-lg border border-gray-700 min-w-[3ch] text-center">
+                    <div className="flex justify-between items-end mb-4">
+                        <label className="text-sm font-bold text-gray-400 uppercase tracking-wider">Count</label>
+                        <div className="text-xl font-bold text-white font-mono bg-gray-800 px-3 py-1 rounded-lg border border-gray-700 min-w-[3ch] text-center">
                           {questionCount}
                         </div>
                     </div>
@@ -292,23 +341,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ files, onStartQuiz, onSync
                         disabled={!selectedFile && !useDemo && !useMixed}
                         className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     />
-                    <div className="flex justify-between text-xs font-medium text-gray-500 mt-3 font-mono">
-                        <span>1</span>
-                        <span>{maxQuestions > 0 ? maxQuestions : '-'} MAX</span>
-                    </div>
                  </div>
               </div>
 
               <button
                 onClick={handleStart}
                 disabled={(!selectedFile && !useDemo && !useMixed) || maxQuestions === 0}
-                className={`w-full py-5 mt-8 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl ${
+                className={`w-full py-4 mt-6 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl ${
                 (!selectedFile && !useDemo && !useMixed) || maxQuestions === 0
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-1'
                 }`}
             >
-                Start Interview
+                Start Quiz
                 <Play className="w-5 h-5 fill-current" />
             </button>
           </div>
