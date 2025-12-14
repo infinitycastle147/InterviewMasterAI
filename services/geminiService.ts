@@ -3,13 +3,17 @@ import { Question, QuestionType, UserAnswer } from "../types";
 import { SYSTEM_INSTRUCTION_CATEGORIZE, SYSTEM_INSTRUCTION_VALIDATE } from "../constants";
 
 const getAI = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY is missing. AI features will fail.");
+  }
+  return new GoogleGenAI({ apiKey: apiKey || '' });
 };
 
 export const analyzeQuestion = async (rawText: string): Promise<Partial<Question>> => {
   try {
     const ai = getAI();
-    
+
     // Schema definition for categorization
     const responseSchema = {
       type: Type.OBJECT,
@@ -24,7 +28,7 @@ export const analyzeQuestion = async (rawText: string): Promise<Partial<Question
     };
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: rawText,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_CATEGORIZE,
@@ -35,11 +39,11 @@ export const analyzeQuestion = async (rawText: string): Promise<Partial<Question
 
     const text = response.text;
     if (!text) throw new Error("No response from AI");
-    
+
     const result: Partial<Question> = JSON.parse(text);
 
     // --- FALLBACK & CLEANUP LOGIC ---
-    
+
     // Improved Regex to find markdown code blocks.
     // Matches ``` (optional language) (whitespace/newline) (content) ```
     // We match liberally to catch standard markdown blocks.
@@ -51,13 +55,13 @@ export const analyzeQuestion = async (rawText: string): Promise<Partial<Question
       if (match) {
         result.codeSnippet = match[2].trim();
         result.language = match[1]?.trim() || 'javascript';
-        
+
         // If we found code, it's likely a prediction question or coding challenge
         if (result.type === QuestionType.CONCEPTUAL) {
-             const lowerRaw = rawText.toLowerCase();
-             if (lowerRaw.includes('output') || lowerRaw.includes('console.log') || lowerRaw.includes('predict') || lowerRaw.includes('guess')) {
-                 result.type = QuestionType.CODE_PREDICTION;
-             }
+          const lowerRaw = rawText.toLowerCase();
+          if (lowerRaw.includes('output') || lowerRaw.includes('console.log') || lowerRaw.includes('predict') || lowerRaw.includes('guess')) {
+            result.type = QuestionType.CODE_PREDICTION;
+          }
         }
       }
     }
@@ -65,20 +69,20 @@ export const analyzeQuestion = async (rawText: string): Promise<Partial<Question
     // 2. Clean up the question text.
     // Remove the code block from the question text to avoid duplication in UI
     if (result.questionText) {
-        // Try to find the exact snippet in the text
-        if (result.codeSnippet && result.questionText.includes(result.codeSnippet)) {
-           // Replace the whole block including fences if possible, or just the content
-           const escapedSnippet = result.codeSnippet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex chars
-           const looseRegex = new RegExp(`\`\`\`.*${escapedSnippet}.*\`\`\``, 's');
-           result.questionText = result.questionText.replace(looseRegex, '').trim();
-        }
+      // Try to find the exact snippet in the text
+      if (result.codeSnippet && result.questionText.includes(result.codeSnippet)) {
+        // Replace the whole block including fences if possible, or just the content
+        const escapedSnippet = result.codeSnippet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex chars
+        const looseRegex = new RegExp(`\`\`\`.*${escapedSnippet}.*\`\`\``, 's');
+        result.questionText = result.questionText.replace(looseRegex, '').trim();
+      }
     }
 
     return result;
 
   } catch (error) {
     console.error("AI Analysis Failed", error);
-    
+
     // Emergency Fallback: Try to parse manually if AI fails completely
     // Allow loose whitespace after language identifier
     const codeBlockRegex = /```(\w*)\s+([\s\S]*?)```/;
@@ -89,10 +93,10 @@ export const analyzeQuestion = async (rawText: string): Promise<Partial<Question
     let qText = rawText;
 
     if (match) {
-        codeSnippet = match[2].trim();
-        language = match[1]?.trim() || 'javascript';
-        qText = rawText.replace(match[0], '').trim();
-        type = QuestionType.CODE_PREDICTION;
+      codeSnippet = match[2].trim();
+      language = match[1]?.trim() || 'javascript';
+      qText = rawText.replace(match[0], '').trim();
+      type = QuestionType.CODE_PREDICTION;
     }
 
     return {
@@ -130,10 +134,10 @@ export const prepareExecutableCode = async (rawCode: string): Promise<string> =>
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: prompt,
     });
-    
+
     let text = response.text || rawCode;
     // Clean up if AI wraps in markdown
     text = text.replace(/```javascript/g, '').replace(/```/g, '').trim();
@@ -171,7 +175,7 @@ export const validateAnswerWithAI = async (
     };
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_VALIDATE,
@@ -181,7 +185,7 @@ export const validateAnswerWithAI = async (
       },
     });
 
-     const text = response.text;
+    const text = response.text;
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text);
 
