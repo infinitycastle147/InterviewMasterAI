@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, FileText, Play, Code2, Settings2, Hash, ChevronRight, Github, Layers, Video } from 'lucide-react';
-import { RepoFile, Question } from '../types';
+import { RefreshCw, FileText, Play, Code2, Settings2, Hash, ChevronRight, Github, Layers, Video, X, Save, AlertCircle, HelpCircle } from 'lucide-react';
+import { RepoFile, Question, GithubConfig } from '../types';
 import { DEMO_QUESTIONS_MARKDOWN } from '../constants';
 
 interface DashboardProps {
@@ -9,6 +10,8 @@ interface DashboardProps {
   onStartLiveInterview: (questions: Question[]) => void;
   onSync: () => void;
   isSyncing: boolean;
+  githubConfig: GithubConfig;
+  onConfigChange: (config: GithubConfig) => void;
 }
 
 const parseQuestions = (markdown: string): Question[] => {
@@ -67,7 +70,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     onStartQuiz, 
     onStartLiveInterview, 
     onSync, 
-    isSyncing
+    isSyncing,
+    githubConfig,
+    onConfigChange
 }) => {
   const [selectedFile, setSelectedFile] = useState<RepoFile | null>(null);
   const [useDemo, setUseDemo] = useState(false);
@@ -75,6 +80,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [maxQuestions, setMaxQuestions] = useState(0);
   const [questionCount, setQuestionCount] = useState(5);
   const [allParsedQuestions, setAllParsedQuestions] = useState<Question[]>([]);
+  
+  // Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempConfig, setTempConfig] = useState<GithubConfig>(githubConfig);
 
   useEffect(() => {
     let raw: Question[] = [];
@@ -149,6 +158,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setUseDemo(false);
   };
 
+  const handleSaveConfig = () => {
+    onConfigChange(tempConfig);
+    setIsSettingsOpen(false);
+  };
+
+  const handleOpenSettings = () => {
+    setTempConfig(githubConfig);
+    setIsSettingsOpen(true);
+  }
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
       
@@ -179,14 +198,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </h3>
                   <p className="text-sm text-gray-500">Select a topic to generate your quiz</p>
                 </div>
-                <button
-                  onClick={onSync}
-                  disabled={isSyncing}
-                  className="px-4 py-2 text-sm font-semibold bg-gray-800 hover:bg-gray-700 text-white rounded-xl border border-gray-700 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Syncing...' : 'Sync GitHub'}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleOpenSettings}
+                        className="p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl border border-gray-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
+                        title="Repository Settings"
+                    >
+                        <Settings2 className="w-4 h-4" />
+                    </button>
+                    <button
+                    onClick={onSync}
+                    disabled={isSyncing}
+                    className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-lg hover:shadow-xl hover:shadow-indigo-500/20 active:scale-95 flex items-center gap-2"
+                    >
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync GitHub'}
+                    </button>
+                </div>
               </div>
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -196,7 +224,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <Github className="w-8 h-8 text-gray-600" />
                       </div>
                       <h4 className="text-gray-300 font-medium mb-1">No repositories synced</h4>
-                      <p className="text-sm text-gray-500 mb-4">Sync your GitHub repo or try the demo below.</p>
+                      <p className="text-sm text-gray-500 mb-4 max-w-xs mx-auto">
+                        Configured: {githubConfig.owner}/{githubConfig.repo}
+                      </p>
                       <button 
                          onClick={handleSelectDemo}
                          className="text-indigo-400 hover:text-indigo-300 text-sm font-medium underline underline-offset-4"
@@ -359,6 +389,115 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Configuration Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Github className="w-6 h-6" /> Repository Settings
+                </h3>
+                <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                    <X className="w-6 h-6" />
+                </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+                
+                {/* Inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Owner / Username</label>
+                        <input 
+                            type="text" 
+                            value={tempConfig.owner}
+                            onChange={(e) => setTempConfig({...tempConfig, owner: e.target.value})}
+                            className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
+                            placeholder="e.g., facebook"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Repository</label>
+                        <input 
+                            type="text" 
+                            value={tempConfig.repo}
+                            onChange={(e) => setTempConfig({...tempConfig, repo: e.target.value})}
+                            className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
+                            placeholder="e.g., react"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Path to Folder</label>
+                        <input 
+                            type="text" 
+                            value={tempConfig.path}
+                            onChange={(e) => setTempConfig({...tempConfig, path: e.target.value})}
+                            className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
+                            placeholder="e.g., questions"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Branch</label>
+                        <input 
+                            type="text" 
+                            value={tempConfig.branch}
+                            onChange={(e) => setTempConfig({...tempConfig, branch: e.target.value})}
+                            className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
+                            placeholder="e.g., main"
+                        />
+                    </div>
+                </div>
+
+                {/* Instructions Box */}
+                <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-xl p-5 mb-2">
+                    <h4 className="text-indigo-400 font-bold mb-3 flex items-center gap-2">
+                        <HelpCircle className="w-4 h-4" /> 
+                        File Format Guide
+                    </h4>
+                    <p className="text-sm text-gray-300 mb-3 leading-relaxed">
+                        To ensure the AI parser works correctly, utilize standard Markdown (<strong>.md</strong>) files. 
+                        Each file can contain multiple questions.
+                    </p>
+                    <ul className="text-sm text-gray-400 list-disc list-inside space-y-1 mb-4">
+                        <li>Start questions with a number and a dot (e.g., <code className="bg-gray-800 px-1 py-0.5 rounded text-xs text-gray-300">1.</code>).</li>
+                        <li>Use standard code blocks with language identifiers.</li>
+                        <li><strong>Do not</strong> include the answer key in the text.</li>
+                    </ul>
+                    
+                    <div className="bg-gray-950 border border-gray-800 rounded-lg p-4 font-mono text-xs text-gray-300">
+                        <div className="text-gray-500 mb-2 border-b border-gray-800 pb-2 flex justify-between">
+                            <span>example.md</span>
+                            <span>Markdown</span>
+                        </div>
+                        <pre className="whitespace-pre text-emerald-400">1. What is the output of this code?</pre>
+                        <pre className="whitespace-pre text-blue-400">```javascript</pre>
+                        <pre className="whitespace-pre text-gray-300">console.log(typeof NaN);</pre>
+                        <pre className="whitespace-pre text-blue-400">```</pre>
+                        <br/>
+                        <pre className="whitespace-pre text-emerald-400">2. Explain Event Bubbling.</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-800 bg-gray-900 flex justify-end gap-3">
+                <button 
+                    onClick={() => setIsSettingsOpen(false)}
+                    className="px-5 py-2.5 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                >
+                    Cancel
+                </button>
+                <button 
+                    onClick={handleSaveConfig}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition-all"
+                >
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

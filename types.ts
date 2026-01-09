@@ -56,3 +56,10 @@ export interface RepoFile {
   download_url: string;
   content?: string; // Cached content
 }
+
+export interface GithubConfig {
+  owner: string;
+  repo: string;
+  path: string;
+  branch: string;
+}

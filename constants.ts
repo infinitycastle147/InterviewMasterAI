@@ -3,6 +3,13 @@
 // We will default to a "Demo Mode" content if this fails, or use a sample public repo.
 export const DEFAULT_REPO_URL = "https://api.github.com/repos/ashish-jeavio/second-brain/contents/Interview%20Questions?ref=main";
 
+export const DEFAULT_GITHUB_CONFIG = {
+  owner: 'ashish-jeavio',
+  repo: 'second-brain',
+  path: 'Interview Questions',
+  branch: 'main'
+};
+
 export const DEMO_QUESTIONS_MARKDOWN = `
 1. What is the difference between null and undefined in JavaScript?
 2. Predict the output of the following code:

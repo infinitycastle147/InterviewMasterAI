@@ -5,8 +5,8 @@ import { Dashboard } from './components/Dashboard';
 import { QuizSession } from './components/QuizSession';
 import { Results } from './components/Results';
 import { LiveInterviewSession } from './components/LiveInterviewSession';
-import { Question, RepoFile, UserAnswer } from './types';
-import { DEFAULT_REPO_URL } from './constants';
+import { Question, RepoFile, UserAnswer, GithubConfig } from './types';
+import { DEFAULT_GITHUB_CONFIG } from './constants';
 
 enum AppView {
   DASHBOARD = 'DASHBOARD',
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.DASHBOARD);
   const [repoFiles, setRepoFiles] = useState<RepoFile[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [githubConfig, setGithubConfig] = useState<GithubConfig>(DEFAULT_GITHUB_CONFIG);
   
   // Quiz State
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
@@ -28,8 +29,16 @@ const App: React.FC = () => {
   const syncRepo = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch(DEFAULT_REPO_URL);
-      if (!response.ok) throw new Error("Failed to fetch repo contents");
+      // Construct dynamic GitHub API URL
+      const url = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${githubConfig.path}?ref=${githubConfig.branch}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Repository or path not found. Please check your settings.");
+        }
+        throw new Error("Failed to fetch repo contents");
+      }
       
       const data = await response.json();
       const mdFiles = Array.isArray(data) 
@@ -45,7 +54,8 @@ const App: React.FC = () => {
 
       setRepoFiles(filesWithContent);
     } catch (error) {
-      console.error("Sync failed, utilizing demo mode implicitly in UI", error);
+      console.error("Sync failed", error);
+      alert("Failed to sync GitHub: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setIsSyncing(false);
     }
@@ -83,6 +93,8 @@ const App: React.FC = () => {
           onStartLiveInterview={startLiveInterview}
           onSync={syncRepo}
           isSyncing={isSyncing}
+          githubConfig={githubConfig}
+          onConfigChange={setGithubConfig}
         />
       )}
       {view === AppView.QUIZ && (
